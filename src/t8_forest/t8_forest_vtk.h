@@ -38,7 +38,7 @@ T8_EXTERN_C_BEGIN ();
  * process and a meta .pvtu file.
  * This function uses the vtk library. t8code must be configured with
  * "--with-vtk" in order to use it.
- * Currently does not support pyramid elements.
+ * Currently does not support quadratic pyramid elements.
  * \param [in]  forest    The forest.
  * \param [in]  fileprefix The prefix of the output files. The meta file will be named \a fileprefix.pvtu .
  * \param [in]  write_treeid If true, the global tree id is written for each element.

@@ -27,6 +27,8 @@ libt8_installed_headers = \
   src/t8_cmesh_tetgen.h src/t8_cmesh_readmshfile.h \
   src/t8_cmesh_vtk_writer.h \
   src/t8_cmesh_vtk_reader.hxx \
+  src/t8_interactive_visualization/t8_vis.hxx \
+  src/t8_cmesh/t8_cmesh_vtk_helper.hxx \
   src/t8_forest.h \
   src/t8_vec.h \
   src/t8_version.h \
@@ -73,11 +75,12 @@ libt8_internal_headers = \
   src/t8_cmesh/t8_cmesh_stash.h src/t8_cmesh/t8_cmesh_trees.h \
   src/t8_cmesh/t8_cmesh_types.h src/t8_cmesh/t8_cmesh_partition.h \
   src/t8_cmesh/t8_cmesh_refine.h src/t8_cmesh/t8_cmesh_copy.h \
-  src/t8_cmesh/t8_cmesh_offset.h src/t8_cmesh/t8_cmesh_reader_helper.hxx\
-  src/t8_cmesh/t8_cmesh_vtk_helper.hxx src/t8_forest/t8_forest_cxx.h  \
+  src/t8_cmesh/t8_cmesh_offset.h src/t8_cmesh/t8_cmesh_reader_helper.hxx \
+  src/t8_forest/t8_forest_cxx.h  \
   src/t8_forest/t8_forest_ghost.h \
   src/t8_forest/t8_forest_balance.h src/t8_forest/t8_forest_types.h \
-  src/t8_forest/t8_forest_private.h 
+  src/t8_forest/t8_forest_private.h \
+  src/t8_forest/t8_forest_vtk_helper.hxx
 libt8_compiled_sources = \
   src/t8.c src/t8_eclass.c src/t8_mesh.c \
   src/t8_element.c src/t8_element_cxx.cxx \
@@ -96,6 +99,7 @@ libt8_compiled_sources = \
   src/t8_cmesh/t8_cmesh_examples.c \
   src/t8_cmesh/t8_cmesh_reader_helper.cxx \
   src/t8_cmesh/t8_cmesh_vtk_helper.cxx \
+  src/t8_forest/t8_forest_vtk_helper.cxx \
   src/t8_data/t8_containers.cxx \
   src/t8_cmesh/t8_cmesh_offset.c src/t8_cmesh/t8_cmesh_readmshfile.cxx \
   src/t8_forest/t8_forest.c src/t8_forest/t8_forest_adapt.cxx \
@@ -114,7 +118,8 @@ libt8_compiled_sources = \
   src/t8_forest/t8_forest_netcdf.cxx \
   src/t8_element_shape.c \
   src/t8_netcdf.c \
-  src/t8_cmesh/t8_cmesh_testcases.c 
+  src/t8_cmesh/t8_cmesh_testcases.c \
+  src/t8_interactive_visualization/t8_vis.cxx
 
 # this variable is used for headers that are not publicly installed
 T8_CPPFLAGS =

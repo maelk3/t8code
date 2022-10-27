@@ -31,6 +31,7 @@ along with t8code; if not, write to the Free Software Foundation, Inc.,
 #include <t8_cmesh_vtk_reader.hxx>
 #include <t8_cmesh/t8_cmesh_examples.h>
 #include <t8_cmesh/t8_cmesh_vtk_helper.hxx>
+#include <t8_geometry/t8_geometry_implementations/t8_geometry_linear.h>
 
 #if T8_WITH_VTK
 #include <vtkUnstructuredGrid.h>
@@ -123,30 +124,41 @@ t8_cmesh_parallel_read_from_vtk_unstructured (const char *filename,
 
 /* Construct a cmesh given a filename a communicator */
 t8_cmesh_t
-t8_cmesh_read_from_vtk_unstructured (const char *filename, sc_MPI_Comm comm)
+t8_cmesh_read_from_vtk_unstructured (const char *filename,
+                                     const int partition, const int main_proc,
+                                     sc_MPI_Comm comm)
 {
 #if T8_WITH_VTK
+  int                 mpirank;
+  int                 mpisize;
+  int                 mpiret;
   t8_cmesh_t          cmesh;
-  t8_cmesh_init (&cmesh);
-  /*The Incoming data must be an unstructured Grid */
-  vtkSmartPointer < vtkUnstructuredGrid > unstructuredGrid;
-  vtkSmartPointer < vtkCellData > cellData;
-  /* Prepare grid for translation */
-  unstructuredGrid = t8_read_unstructured (filename);
-  if (unstructuredGrid == NULL) {
-    t8_errorf ("Could not read file.\n");
+  mpiret = sc_MPI_Comm_rank (comm, &mpirank);
+  SC_CHECK_MPI (mpiret);
+  mpiret = sc_MPI_Comm_size (comm, &mpisize);
+  SC_CHECK_MPI (mpiret);
+  int                 main_proc_read_successful = 0;
+  vtkSmartPointer < vtkUnstructuredGrid > vtkGrid =
+    vtkSmartPointer < vtkUnstructuredGrid >::New ();
+
+  T8_ASSERT (partition == 0 || (main_proc >= 0 && main_proc < mpisize));
+
+  main_proc_read_successful =
+    t8_read_unstructured (filename, vtkGrid, partition, main_proc, comm);
+  if (!main_proc_read_successful) {
+    t8_global_errorf
+      ("Main process (Rank %i) did not read the file successfully.\n",
+       main_proc);
+    t8_cmesh_destroy (&cmesh);
     return NULL;
   }
-
-  /* Get the Data of the all cells */
-  cellData = unstructuredGrid->GetCellData ();
-  if (cellData == NULL) {
-    t8_productionf ("No cellData found.\n");
+  else {
+    cmesh = t8_unstructured_to_cmesh (vtkGrid, partition, main_proc, comm);
   }
-
   /*Actual translation */
   t8_vtk_iterate_cells (unstructuredGrid, cellData, comm, cmesh);
   t8_cmesh_commit (cmesh, comm);
+
   return cmesh;
 #else
   /* Return NULL if not linked against vtk */
@@ -165,6 +177,8 @@ t8_cmesh_read_from_vtk_poly (const char *filename, sc_MPI_Comm comm)
   vtkSmartPointer < vtkCellData > cell_data;
   vtkSmartPointer < vtkPolyData > triangulated;
   vtkNew < vtkTriangleFilter > tri_filter;
+  t8_cmesh_t          cmesh;
+  t8_cmesh_init (&cmesh);
 
   t8_cmesh_t          cmesh;
   t8_cmesh_init (&cmesh);
@@ -192,10 +206,15 @@ t8_cmesh_read_from_vtk_poly (const char *filename, sc_MPI_Comm comm)
   if (cell_data == NULL) {
     t8_productionf ("No cellData found.\n");
   }
-
-  t8_vtk_iterate_cells (triangulated, cell_data, comm, cmesh);
-  t8_cmesh_commit (cmesh, comm);
-  return cmesh;
+  t8_vtk_iterate_cells (triangulated, cell_data, cmesh, comm);
+  T8_ASSERT (cmesh != NULL);
+  if (cmesh != NULL) {
+    t8_cmesh_commit (cmesh, comm);
+    return cmesh;
+  }
+  else {
+    return NULL;
+  }
 #else
   t8_global_errorf
     ("WARNING: t8code is not linked against the vtk library. Without proper linking t8code cannot use the vtk-reader\n");

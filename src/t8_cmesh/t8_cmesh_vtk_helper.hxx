@@ -40,6 +40,15 @@ along with t8code; if not, write to the Free Software Foundation, Inc.,
  * see https://vtk.org/doc/nightly/html/vtkCellType_8h.html to check.*/
 extern const t8_eclass_t t8_cmesh_vtk_type_to_t8_type[82];
 
+/**
+ * Compute the maximal dimension of a cell of an vktUnstructuredGrid
+ * 
+ * \param[in] grid  Input grid
+ * \return int      The maximal dimension of a cell in \a grid
+ */
+int                 t8_get_dimension (vtkSmartPointer < vtkUnstructuredGrid >
+                                      grid);
+
 /** iterate over a vtkDataSet via a Celliterator and construct a tree
  * for every cell. All trees are then commited in a cmesh. For each cell
  * add the CellData that lays on the cell (if existent). 
@@ -54,8 +63,8 @@ extern const t8_eclass_t t8_cmesh_vtk_type_to_t8_type[82];
 t8_gloidx_t         t8_vtk_iterate_cells (vtkSmartPointer < vtkDataSet >
                                           cells,
                                           vtkSmartPointer < vtkCellData >
-                                          cell_data, sc_MPI_Comm comm,
-                                          t8_cmesh_t cmesh);
+                                          cell_data, t8_cmesh_t cmesh,
+                                          sc_MPI_Comm comm);
 
 /**
  * Read the Poly-data of a file containing vtkPolyData.
@@ -68,11 +77,28 @@ vtkSmartPointer < vtkPolyData > t8_read_poly (const char *filename);
 /**
  * Read the unstructured grid of a file containing vtkPolyData
  * \param [in]      filename            The file containing the Data,
- * \returns         vtkSmartPointer<vtkUnstructuredGrid>    A pointer to vtkPolyData,
- *                  or NULL if an error occurs during reading.
+ * \returns         1, if the read is successful, 0 if not. 
  */
-vtkSmartPointer < vtkUnstructuredGrid >
-t8_read_unstructured (const char *filename);
+int                 t8_read_unstructured (const char *filename,
+                                          vtkSmartPointer <
+                                          vtkUnstructuredGrid > vtkGrid,
+                                          const int partition,
+                                          const int main_proc,
+                                          sc_MPI_Comm comm);
+
+/**
+ * @brief 
+ * 
+ * \param[in] vtkGrid 
+ * \param[in] partition 
+ * \param[in] main_proc 
+ * \param[in, out] cmesh 
+ */
+t8_cmesh_t          t8_unstructured_to_cmesh (vtkSmartPointer <
+                                              vtkUnstructuredGrid > vtkGrid,
+                                              const int partition,
+                                              const int main_proc,
+                                              sc_MPI_Comm comm);
 #endif
 
 #endif /* T8_CMESH_VTK_HELPER */
