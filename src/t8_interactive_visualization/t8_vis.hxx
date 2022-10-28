@@ -39,20 +39,6 @@
 
 //T8_EXTERN_C_BEGIN ();
 
-static t8_cmesh_t
-t8_read_partition (t8_cmesh_t cmesh, sc_MPI_Comm comm)
-{
-  t8_cmesh_t          p_mesh;
-  t8_cmesh_init (&p_mesh);
-  t8_cmesh_set_partition_uniform (p_mesh, 0, t8_scheme_new_default_cxx ());
-  t8_cmesh_set_derive (p_mesh, cmesh);
-
-  t8_cmesh_commit (p_mesh, comm);
-  //t8_cmesh_debug_print_trees(p_mesh, comm);
-  t8_cmesh_vtk_write_file (p_mesh, "cmesh_part", 1.);
-  return p_mesh;
-}
-
 template < class vis_object > class t8_interactive_vis {
 protected:
   /* Flag, if we have already read the Data from a file
@@ -140,23 +126,25 @@ void
 t8_interactive_vis_source_to_forest ()
 {
   /* TODO: Currently done twice, extrad t8_read_unstructured from t8_cmesh_read */
-  const int           successful_read =
-    t8_read_unstructured (filepath, interaction_object, 1, 0, comm);
+  //const int           successful_read =
+   // t8_read_unstructured (filepath, interaction_object, 1, 0, comm);
+  const int           successful_read = t8_read_parallel_unstructured(filepath, interaction_object, comm);
   t8_cmesh_t          cmesh;
   t8_cmesh_t          cmesh_in;
   t8_cmesh_init (&cmesh);
   if (successful_read) {
-    cmesh_in = t8_unstructured_to_cmesh (interaction_object, 1, 0, comm);
-    
+    //cmesh_in = t8_unstructured_to_cmesh (interaction_object, 1, 0, comm);
+    cmesh_in = t8_parallel_unstructured_to_cmesh(interaction_object, comm);
     t8_cmesh_set_derive (cmesh, cmesh_in);
     t8_cmesh_set_partition_uniform (cmesh, 0, t8_scheme_new_default_cxx ());
     t8_cmesh_commit (cmesh, comm);
     t8_cmesh_vtk_write_file (cmesh, "cmesh_part", 1.0);
   }
   else {
+    t8_global_errorf ("Could not commit cmesh.\n");
     t8_cmesh_unref(&cmesh);
     t8_cmesh_unref(&cmesh_in);
-    t8_global_errorf ("Could not commit cmesh.\n");
+    
     return;
   }
   t8_forest_set_cmesh (forest, cmesh, comm);

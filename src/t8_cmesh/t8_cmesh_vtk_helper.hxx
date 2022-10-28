@@ -64,6 +64,7 @@ t8_gloidx_t         t8_vtk_iterate_cells (vtkSmartPointer < vtkDataSet >
                                           cells,
                                           vtkSmartPointer < vtkCellData >
                                           cell_data, t8_cmesh_t cmesh,
+                                          const t8_gloidx_t first_tree_id,
                                           sc_MPI_Comm comm);
 
 /**
@@ -85,6 +86,32 @@ int                 t8_read_unstructured (const char *filename,
                                           const int partition,
                                           const int main_proc,
                                           sc_MPI_Comm comm);
+
+/**
+ * Read the unstructured grid of multiple files containing a vtkUnstructuredGrid.
+ * Checks, if the read was successful on all processes.
+ * 
+ * @param filename      path to the .pvtu file.
+ * @param vtkGrid       The grid that will be filled with the data 
+ * @param comm          The communicator to use
+ * \return int          0 if any process was not able to read its chunk, 1 otherwise.
+ */
+int                 t8_read_parallel_unstructured (const char *filename,
+                                                   vtkSmartPointer <
+                                                   vtkUnstructuredGrid >
+                                                   vtkGrid, sc_MPI_Comm comm);
+
+/**
+ * @brief 
+ * 
+ * @param vtkGrid 
+ * @param comm 
+ * @return t8_cmesh_t 
+ */
+t8_cmesh_t          t8_parallel_unstructured_to_cmesh (vtkSmartPointer <
+                                                       vtkUnstructuredGrid >
+                                                       vtkGrid,
+                                                       sc_MPI_Comm comm);
 
 /**
  * @brief 

@@ -43,6 +43,8 @@ along with t8code; if not, write to the Free Software Foundation, Inc.,
 #include <vtkPolyDataReader.h>
 #include <vtkSTLReader.h>
 #include <vtkXMLPolyDataReader.h>
+#include <vtkStreamingDemandDrivenPipeline.h>
+#include <vtkInformation.h>
 
 #include <t8_cmesh/t8_cmesh_vtk_helper.hxx>
 
@@ -140,7 +142,9 @@ t8_read_unstructured_ext (const char *filename,
       ("You are using the serial reader to read a .pvtu file."
        " Every process will read the complete data. Use t8_cmesh_parallel_read_from_vtk_unstructured"
        " if the data should be read in chunks.\n");
-    return reader->GetOutput ();
+    grid->ShallowCopy (reader->GetOutput ());
+    t8_debugf ("Finished reading of file.\n");
+    return;
   }
   else {
     /* Return NULL if the reader is not used correctly */
@@ -178,6 +182,62 @@ t8_read_unstructured (const char *filename,
   return main_proc_read_successful;
 }
 
+static void
+t8_read_parallel_unstructured_ext (const char *filename,
+                                   vtkSmartPointer < vtkUnstructuredGrid >
+                                   vtkGrid, sc_MPI_Comm comm)
+{
+  vtkSmartPointer < vtkXMLPUnstructuredGridReader > p_reader =
+    vtkSmartPointer < vtkXMLPUnstructuredGridReader >::New ();
+  int                 mpiret;
+  int                 mpisize;
+  int                 mpirank;
+  /* Init shared memory to set tree_offsets via shared_mem_array. */
+  /* Setup the pvtu Reader. */
+  p_reader->SetFileName (filename);
+  p_reader->UpdateInformation ();
+  mpiret = sc_MPI_Comm_size (comm, &mpisize);
+  SC_CHECK_MPI (mpiret);
+  mpiret = sc_MPI_Comm_rank (comm, &mpirank);
+  SC_CHECK_MPI (mpiret);
+  /*Tell the reader to read a chunk of the vtu files given by the pvtu file. */
+  vtkInformation     *Info = p_reader->GetOutputInformation (0);
+  Info->Set (vtkStreamingDemandDrivenPipeline::UPDATE_PIECE_NUMBER (),
+             mpirank);
+  Info->Set (vtkStreamingDemandDrivenPipeline::UPDATE_NUMBER_OF_PIECES (),
+             mpisize);
+  p_reader->Update ();
+
+  /* Get grid and cell-data of the current chunk. */
+  vtkGrid->ShallowCopy (p_reader->GetOutput ());
+}
+
+int
+t8_read_parallel_unstructured (const char *filename,
+                               vtkSmartPointer < vtkUnstructuredGrid >
+                               vtkGrid, sc_MPI_Comm comm)
+{
+  int                 read_successful = 0;
+  int                 all_read_successful;
+  t8_read_parallel_unstructured_ext (filename, vtkGrid, comm);
+  int                 mpirank;
+  int                 mpiret = sc_MPI_Comm_rank (comm, &mpirank);
+  if (vtkGrid == NULL) {
+    read_successful = 0;
+    SC_CHECK_MPI (mpiret);
+    t8_errorf ("Proc %i was unable to read the file\n", mpirank);
+  }
+  else {
+    read_successful = 1;
+    t8_debugf ("[D] Proc %i read the file\n", mpirank);
+  }
+
+  sc_MPI_Allreduce (&read_successful, &all_read_successful, 1, sc_MPI_INT,
+                    sc_MPI_LAND, comm);
+  t8_debugf ("[D] all procs: %i\n", all_read_successful);
+  return all_read_successful;
+}
+
 t8_cmesh_t
 t8_unstructured_to_cmesh (vtkSmartPointer < vtkUnstructuredGrid > vtkGrid,
                           const int partition, const int main_proc,
@@ -203,7 +263,7 @@ t8_unstructured_to_cmesh (vtkSmartPointer < vtkUnstructuredGrid > vtkGrid,
     }
 
     /* Actual translation */
-    num_trees = t8_vtk_iterate_cells (vtkGrid, cellData, cmesh, comm);
+    num_trees = t8_vtk_iterate_cells (vtkGrid, cellData, cmesh, 0, comm);
     dim = t8_get_dimension (vtkGrid);
     t8_debugf ("[D] read data of dimension %i\n", dim);
     t8_cmesh_set_dimension (cmesh, dim);
@@ -239,6 +299,65 @@ t8_unstructured_to_cmesh (vtkSmartPointer < vtkUnstructuredGrid > vtkGrid,
   if (cmesh != NULL) {
     t8_cmesh_commit (cmesh, comm);
   }
+  return cmesh;
+}
+
+t8_cmesh_t
+t8_parallel_unstructured_to_cmesh (vtkSmartPointer < vtkUnstructuredGrid >
+                                   vtkGrid, sc_MPI_Comm comm)
+{
+  t8_cmesh_t          cmesh;
+  int                 mpisize;
+  int                 mpirank;
+  int                 mpiret;
+  vtkSmartPointer < vtkCellData > cellData;
+  cellData = vtkGrid->GetCellData ();
+  if (cellData == NULL) {
+    t8_productionf ("No cellData found.\n");
+  }
+
+  t8_cmesh_init (&cmesh);
+  t8_shmem_init (comm);
+
+  /* Compute the tree-offsets of the partitioned cmesh. */
+  /* Get the number of cells of the local chunk. */
+  t8_gloidx_t         local_num_trees = vtkGrid->GetNumberOfCells ();
+
+  /* Allocate shared memory for the tree_offsets */
+  mpiret = sc_MPI_Comm_size (comm, &mpisize);
+  SC_CHECK_MPI (mpiret);
+  t8_shmem_array_t    tree_offsets = t8_cmesh_alloc_offsets (mpisize, comm);
+
+  /* Compute the offsets. */
+  t8_shmem_array_prefix (&local_num_trees, tree_offsets, 1, T8_MPI_GLOIDX,
+                         sc_MPI_SUM, comm);
+
+  /* Set the global id of the first and last tree of the local chunk. */
+  mpiret = sc_MPI_Comm_rank (comm, &mpirank);
+  SC_CHECK_MPI (mpiret);
+  const t8_gloidx_t   first_tree =
+    t8_shmem_array_get_gloidx (tree_offsets, mpirank);
+  const t8_gloidx_t   last_tree = first_tree + local_num_trees - 1;
+
+  t8_debugf ("[D] first_tree: %li, last_tree: %li\n", first_tree, last_tree);
+
+  /* Set partition. */
+  /* TODO: Use t8_cmesh_set_partition_offsets as soon as is it possible to call
+   * the function with non-derived cmeshes. */
+  t8_cmesh_set_partition_range (cmesh, 3, first_tree, last_tree);
+
+  /* Start constructing cmesh */
+  t8_gloidx_t         num_trees =
+    t8_vtk_iterate_cells (vtkGrid, cellData, cmesh, first_tree, comm);
+  T8_ASSERT (num_trees == local_num_trees);
+  int                 dim = t8_get_dimension (vtkGrid);
+  t8_cmesh_set_dimension (cmesh, dim);
+  t8_geometry_c      *linear_geom = t8_geometry_linear_new (dim);
+  t8_cmesh_register_geometry (cmesh, linear_geom);
+  t8_cmesh_commit (cmesh, comm);
+
+  t8_shmem_array_destroy (&tree_offsets);
+  t8_shmem_finalize (comm);
   return cmesh;
 }
 
@@ -306,7 +425,8 @@ vtkSmartPointer < vtkPolyData > t8_read_poly (const char *filename)
 t8_gloidx_t
 t8_vtk_iterate_cells (vtkSmartPointer < vtkDataSet > cells,
                       vtkSmartPointer < vtkCellData > cell_data,
-                      t8_cmesh_t cmesh, sc_MPI_Comm comm)
+                      t8_cmesh_t cmesh, const t8_gloidx_t first_tree_id,
+                      sc_MPI_Comm comm)
 {
   vtkCellIterator    *cell_it;
   vtkSmartPointer < vtkPoints > points;
@@ -314,7 +434,6 @@ t8_vtk_iterate_cells (vtkSmartPointer < vtkDataSet > cells,
   double            **tuples;
   size_t             *data_size;
   t8_gloidx_t         tree_id = 0;
-  t8_gloidx_t         first_tree_id;
   int                 max_dim = -1;
   const int           max_cell_points = cells->GetMaxCellSize ();
   T8_ASSERT (max_cell_points > 0);
