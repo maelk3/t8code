@@ -47,7 +47,8 @@ extern const t8_eclass_t t8_cmesh_vtk_type_to_t8_type[82];
  * \return int      The maximal dimension of a cell in \a grid
  */
 int                 t8_get_dimension (vtkSmartPointer < vtkUnstructuredGrid >
-                                      grid);
+                                      grid,
+                                      const t8_gloidx_t num_local_cells);
 
 /** iterate over a vtkDataSet via a Celliterator and construct a tree
  * for every cell. All trees are then commited in a cmesh. For each cell
@@ -102,7 +103,7 @@ int                 t8_read_parallel_unstructured (const char *filename,
                                                    vtkGrid, sc_MPI_Comm comm);
 
 /**
- * @brief 
+ * 
  * 
  * @param vtkGrid 
  * @param comm 

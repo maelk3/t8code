@@ -74,26 +74,32 @@ const t8_eclass_t   t8_cmesh_vtk_type_to_t8_type[82] = {
 };
 
 int
-t8_get_dimension (vtkSmartPointer < vtkUnstructuredGrid > grid)
+t8_get_dimension (vtkSmartPointer < vtkUnstructuredGrid > grid,
+                  const t8_gloidx_t num_local_cells)
 {
-  /* Get the array of cell types */
-  vtkSmartPointer < vtkUnsignedCharArray > cell_types =
-    grid->GetCellTypesArray ();
-  int                 max_cell_type = -1;
-  const vtkIdType     num_types = cell_types->GetNumberOfTuples ();
-  for (vtkIdType cell_types_it = 0; cell_types_it < num_types;
-       cell_types_it++) {
-    const vtkIdType     type = cell_types->GetValue (cell_types_it);
-    if (type > max_cell_type) {
-      max_cell_type = type;
+  if (num_local_cells > 0) {
+    /* Get the array of cell types */
+    vtkSmartPointer < vtkUnsignedCharArray > cell_types =
+      grid->GetCellTypesArray ();
+    int                 max_cell_type = -1;
+    const vtkIdType     num_types = cell_types->GetNumberOfTuples ();
+    for (vtkIdType cell_types_it = 0; cell_types_it < num_types;
+         cell_types_it++) {
+      const vtkIdType     type = cell_types->GetValue (cell_types_it);
+      if (type > max_cell_type) {
+        max_cell_type = type;
+      }
     }
+    T8_ASSERT (0 <= max_cell_type && max_cell_type < 82);
+    const int           ieclass = t8_cmesh_vtk_type_to_t8_type[max_cell_type];
+    T8_ASSERT (ieclass != T8_ECLASS_INVALID);
+    t8_debugf ("[D] dim: %i\n", t8_eclass_to_dimension[ieclass]);
+    return t8_eclass_to_dimension[ieclass];
   }
-  T8_ASSERT (0 <= max_cell_type && max_cell_type < 82);
-  const int           ieclass = t8_cmesh_vtk_type_to_t8_type[max_cell_type];
-  T8_ASSERT (ieclass != T8_ECLASS_INVALID);
-  t8_debugf ("[D] dim: %i\n", t8_eclass_to_dimension[ieclass]);
+  else {
+    return 3;
+  }
 
-  return t8_eclass_to_dimension[ieclass];
 }
 
 static void
@@ -264,7 +270,7 @@ t8_unstructured_to_cmesh (vtkSmartPointer < vtkUnstructuredGrid > vtkGrid,
 
     /* Actual translation */
     num_trees = t8_vtk_iterate_cells (vtkGrid, cellData, cmesh, 0, comm);
-    dim = t8_get_dimension (vtkGrid);
+    dim = t8_get_dimension (vtkGrid, num_trees);
     t8_debugf ("[D] read data of dimension %i\n", dim);
     t8_cmesh_set_dimension (cmesh, dim);
     t8_geometry_c      *linear_geom = t8_geometry_linear_new (dim);
@@ -322,6 +328,7 @@ t8_parallel_unstructured_to_cmesh (vtkSmartPointer < vtkUnstructuredGrid >
   /* Compute the tree-offsets of the partitioned cmesh. */
   /* Get the number of cells of the local chunk. */
   t8_gloidx_t         local_num_trees = vtkGrid->GetNumberOfCells ();
+  t8_debugf ("[D] local_num_trees. %i\n", local_num_trees);
 
   /* Allocate shared memory for the tree_offsets */
   mpiret = sc_MPI_Comm_size (comm, &mpisize);
@@ -335,26 +342,37 @@ t8_parallel_unstructured_to_cmesh (vtkSmartPointer < vtkUnstructuredGrid >
   /* Set the global id of the first and last tree of the local chunk. */
   mpiret = sc_MPI_Comm_rank (comm, &mpirank);
   SC_CHECK_MPI (mpiret);
+
   const t8_gloidx_t   first_tree =
     t8_shmem_array_get_gloidx (tree_offsets, mpirank);
-  const t8_gloidx_t   last_tree = first_tree + local_num_trees - 1;
+  const t8_gloidx_t   last_tree =
+    (local_num_trees == 0) ? -1 : first_tree + local_num_trees - 1;
 
   t8_debugf ("[D] first_tree: %li, last_tree: %li\n", first_tree, last_tree);
 
   /* Set partition. */
   /* TODO: Use t8_cmesh_set_partition_offsets as soon as is it possible to call
    * the function with non-derived cmeshes. */
-  t8_cmesh_set_partition_range (cmesh, 3, first_tree, last_tree);
+  const t8_gloidx_t   part_first_tree = (first_tree != 0
+                                         && mpirank != 0) ? first_tree : -1;
+  t8_cmesh_set_partition_range (cmesh, 3, part_first_tree, last_tree);
+  t8_debugf ("[D] range is set\n");
 
   /* Start constructing cmesh */
-  t8_gloidx_t         num_trees =
-    t8_vtk_iterate_cells (vtkGrid, cellData, cmesh, first_tree, comm);
-  T8_ASSERT (num_trees == local_num_trees);
-  int                 dim = t8_get_dimension (vtkGrid);
+  if (local_num_trees != 0) {
+    t8_gloidx_t         num_trees =
+      t8_vtk_iterate_cells (vtkGrid, cellData, cmesh, first_tree, comm);
+    T8_ASSERT (num_trees == local_num_trees);
+  }
+  else {
+    t8_debugf ("[D] No trees on this proc\n");
+  }
+  int                 dim = t8_get_dimension (vtkGrid, local_num_trees);
   t8_cmesh_set_dimension (cmesh, dim);
   t8_geometry_c      *linear_geom = t8_geometry_linear_new (dim);
   t8_cmesh_register_geometry (cmesh, linear_geom);
   t8_cmesh_commit (cmesh, comm);
+  t8_debugf ("[D] cmesh is committed\n");
 
   t8_shmem_array_destroy (&tree_offsets);
   t8_shmem_finalize (comm);
@@ -436,7 +454,7 @@ t8_vtk_iterate_cells (vtkSmartPointer < vtkDataSet > cells,
   t8_gloidx_t         tree_id = 0;
   int                 max_dim = -1;
   const int           max_cell_points = cells->GetMaxCellSize ();
-  T8_ASSERT (max_cell_points > 0);
+  T8_ASSERT (max_cell_points >= 0);
   vertices = T8_ALLOC (double, 3 * max_cell_points);
   /* Get cell iterator */
   cell_it = cells->NewCellIterator ();

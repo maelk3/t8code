@@ -135,6 +135,7 @@ t8_interactive_vis_source_to_forest ()
   if (successful_read) {
     //cmesh_in = t8_unstructured_to_cmesh (interaction_object, 1, 0, comm);
     cmesh_in = t8_parallel_unstructured_to_cmesh(interaction_object, comm);
+    t8_debugf("[D] commited %li local trees\n", t8_cmesh_get_num_local_trees(cmesh_in));
     t8_cmesh_set_derive (cmesh, cmesh_in);
     t8_cmesh_set_partition_uniform (cmesh, 0, t8_scheme_new_default_cxx ());
     t8_cmesh_commit (cmesh, comm);
