@@ -70,7 +70,7 @@ t8_gmsh_reader::read (t8_cmesh_t cmesh)
       if (geo == T8_USE_OCC) {
 #if T8_WITH_OCC
         t8_geometry_occ     geometry_occ =
-          t8_geometry_occ_new (dim, fileprefix, "brep_geometry");
+          t8_geometry_occ_new (dim, filepath, "brep_geometry");
         t8_geometry         geometry = geometry_occ;
         /* Register geometry */
         t8_cmesh_register_geometry (cmesh, geometry);

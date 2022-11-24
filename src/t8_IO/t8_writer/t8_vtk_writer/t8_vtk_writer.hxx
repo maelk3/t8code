@@ -42,7 +42,7 @@ typedef char        vtk_path;
 struct t8_vtk_writer:public t8_IO_writer_t
 {
 public:
-  vtk_path * filepath;
+  vtk_path filepath[BUFSIZ];
   /* Constructor */
   t8_vtk_writer ();
   /* Destructor */

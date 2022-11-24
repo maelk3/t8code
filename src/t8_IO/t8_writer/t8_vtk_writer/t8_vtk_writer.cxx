@@ -45,6 +45,11 @@ t8_vtk_writer::set_dest (const t8_extern_t * dest)
     return T8_WRITE_FAIL;
   }
   else {
+    sc_MPI_Comm comm = get_Communicator();
+    int mpiret;
+    int mpirank;
+    mpiret = sc_MPI_Comm_rank(comm, &mpirank);
+    SC_CHECK_MPI(mpiret);
     filepath = (vtk_path *) dest;
     return T8_WRITE_SUCCESS;
   }

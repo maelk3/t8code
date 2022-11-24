@@ -181,16 +181,86 @@ public:
  */
 struct t8_IO_writer
 {
+private:
+  /**
+   * The communicator used by the writer.
+   */
+  sc_MPI_Comm comm = sc_MPI_COMM_WORLD;
+  /**
+   * The process that coordinates the writing.
+   */
+  unsigned int        main_proc = 0;
+
+  t8_partition_t      partition = T8_NO_PARTITION;
 public:
 
     /** The destructor. It does nothing but has to be defined since
      * we may want to delete an t8_IO_reader that is actually inherited
      * and providing an implementation for the destructor ensures that the
      * destructor of the child class will be executed. */
-  virtual ~ t8_IO_writer ()
+                      virtual ~ t8_IO_writer ()
   {
   }
 
+   /**
+   *  Set the Communicator
+   * 
+   * \param new_comm The new communicator to use.
+   */
+  void                set_Communicator (sc_MPI_Comm new_comm)
+  {
+    comm = new_comm;
+  }
+
+  /**
+   * Get the Communicator
+   * 
+   * \return sc_MPI_Comm 
+   */
+  sc_MPI_Comm         get_Communicator ()
+  {
+    return comm;
+  }
+
+  /**
+   * Set the main proc 
+   * 
+   * \param proc The rank of the process to use
+   */
+  void                set_main_proc (const unsigned int proc)
+  {
+    main_proc = proc;
+  }
+
+  /**
+   * Get the main proc
+   * 
+   * \return unsigned int The main-reader proc.
+   */
+  unsigned int        get_main_proc ()
+  {
+    return main_proc;
+  }
+
+  /**
+   * Set partition 
+   * 
+   * \param part Flag, if partitioning should be used or not.
+   */
+  void                set_partition (const t8_partition_t part)
+  {
+    partition = part;
+  }
+
+  /**
+   * Get the partition-flag
+   * 
+   * \return t8_partition_t The partition-flag.
+   */
+  t8_partition_t      get_partition ()
+  {
+    return partition;
+  }
       /**
      * A reader function, that translates an external object into a forest.
      */

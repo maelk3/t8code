@@ -154,13 +154,16 @@ extern void         t8_IO_cxx_destroy (t8_IO_cxx_t * IO);
 t8_cmesh_t          t8_IO_read (t8_IO_cxx_t * IO, const t8_extern_t * source);
 
 /**
- * A general routine for writing files in serial. 
+ * A general routine for writing files. 
  * TODO: provide implementation
  * 
- * \param IO        the IO-interface
- * \param type      The type of the writer to use
+ * \param[in] IO        the IO-interface
+ * \param[in] cmesh     The cmesh, that should be translated.
+ * \param[in, out] dest      A pointer to the destination where the cmesh should be written. 
  */
-void                t8_IO_write (t8_IO_cxx_t * IO);
+void                t8_IO_cmesh_write (t8_IO_cxx_t * IO,
+                                       const t8_cmesh_t cmesh,
+                                       const t8_extern_t * dest);
 
 /**
  * A general routine for writing files in parallel. 
