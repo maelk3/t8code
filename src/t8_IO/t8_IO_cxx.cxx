@@ -206,3 +206,13 @@ t8_IO_read (t8_IO_cxx_t * IO, const t8_extern_t * source)
   }
   return cmesh;
 }
+
+void
+t8_IO_cmesh_write (t8_IO_cxx_t * IO, const t8_cmesh_t cmesh,
+                   const t8_extern_t * dest)
+{
+  T8_ASSERT (IO != NULL);
+  T8_ASSERT (cmesh != NULL);
+  T8_ASSERT (dest != NULL);
+  T8_ASSERT (t8_cmesh_is_committed (cmesh));
+}
