@@ -42,13 +42,13 @@ typedef char vtk_path;
 struct t8_vtk_writer:public t8_IO_writer_t
 {
 public:
-  vtk_path            filepath[BUFSIZ];
+  vtk_path           *fileprefix;
   /* Constructor */
                       t8_vtk_writer ();
   /* Destructor */
                      ~t8_vtk_writer ();
   /* Write the output */
-  virtual t8_write_status_t write (void);
+  virtual t8_write_status_t cmesh_write (t8_cmesh_t cmesh);
 
   /**
    * Set the dest object

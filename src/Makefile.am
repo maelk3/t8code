@@ -84,6 +84,7 @@ libt8_internal_headers = \
   src/t8_forest/t8_forest_ghost.h \
   src/t8_forest/t8_forest_balance.h src/t8_forest/t8_forest_types.h \
   src/t8_forest/t8_forest_private.h \
+  src/t8_IO/t8_writer/t8_vtk_writer/t8_vtk_cmesh_writer.hxx \
   src/t8_IO/t8_reader/t8_gmsh_reader/t8_cmesh_readmshfile.h \
   src/t8_IO/t8_reader/t8_gmsh_reader/t8_cmesh_readmshfile.hxx
 libt8_compiled_sources = \
@@ -123,7 +124,8 @@ libt8_compiled_sources = \
   src/t8_cmesh/t8_cmesh_testcases.c  \
   src/t8_IO/t8_writer/t8_vtk_writer/t8_vtk_writer.cxx \
   src/t8_IO/t8_reader/t8_vtk_reader/t8_vtk_reader.cxx \
-  src/t8_IO/t8_reader/t8_gmsh_reader/t8_gmsh_reader.cxx\
+  src/t8_IO/t8_reader/t8_gmsh_reader/t8_gmsh_reader.cxx \
+  src/t8_IO/t8_writer/t8_vtk_writer/t8_vtk_cmesh_writer.cxx \
   src/t8_IO/t8_IO.c src/t8_IO/t8_IO_cxx.cxx
 
 # this variable is used for headers that are not publicly installed

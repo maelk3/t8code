@@ -28,12 +28,10 @@
 #include <src/t8_IO/t8_writer/t8_vtk_writer/t8_vtk_writer.hxx>
 
 T8_EXTERN_C_BEGIN ();
-/* *INDENT-OFF* */
-t8_write_status_t 
-t8_vtk_writer::write ()
-/* *INDENT-ON* */
+t8_write_status_t
+t8_vtk_writer::cmesh_write (t8_cmesh_t cmesh)
 {
-  t8_debugf ("[D] write_test\n");
+
   return T8_WRITE_SUCCESS;
 }
 
@@ -50,13 +48,14 @@ t8_vtk_writer::set_dest (const t8_extern_t * dest)
     int mpirank;
     mpiret = sc_MPI_Comm_rank(comm, &mpirank);
     SC_CHECK_MPI(mpiret);
-    filepath = (vtk_path *) dest;
+
+    fileprefix = (vtk_path *) dest;
     return T8_WRITE_SUCCESS;
   }
 }
 /* *INDENT-ON* */
 
-t8_vtk_writer::t8_vtk_writer (void)
+t8_vtk_writer::t8_vtk_writer ()
 {
 }
 

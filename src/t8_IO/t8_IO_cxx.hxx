@@ -264,7 +264,7 @@ public:
       /**
      * A reader function, that translates an external object into a forest.
      */
-  virtual t8_write_status_t write (void) = 0;
+  virtual t8_write_status_t cmesh_write (t8_cmesh_t cmesh) = 0;
 
   /**
    * Set the dest object, if dest is not NULL
