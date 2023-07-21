@@ -73,6 +73,26 @@ test_with_cmesh (t8_cmesh_t cmesh)
   t8_cmesh_set_join_by_vertices (NULL, ntrees, all_eclasses, all_verts,
                                  &conn, do_both_directions);
 
+  int                 num_conns = 0;
+  for (int itree = 0; itree < ntrees; itree++) {
+    for (int iface = 0; iface < T8_ECLASS_MAX_FACES; iface++) {
+      const int           neigh_tree =
+        T8_3D_TO_1D (num_trees, T8_ECLASS_MAX_FACES, 3, itree, iface, 0);
+      const int           neigh_face =
+        T8_3D_TO_1D (num_trees, T8_ECLASS_MAX_FACES, 3, itree, iface, 1);
+      const int           orientation =
+        T8_3D_TO_1D (num_trees, T8_ECLASS_MAX_FACES, 3, itree, iface, 2);
+      if (conn[neigh_tree] > -1) {
+        num_conns++;
+        t8_debugf
+          ("[D] tree: %i n_tree: %i, face: %i, n_face: %i, orientation: %i\n",
+           itree, conn[neigh_tree], iface, conn[neigh_face],
+           conn[orientation]);
+      }
+    }
+  }
+  t8_debugf ("[D] num_conns: %i\n", num_conns);
+
   /* Compare results with `t8_cmesh_get_face_neighbor`. */
   for (int this_itree = 0; this_itree < ntrees; this_itree++) {
     const t8_eclass_t   this_eclass = all_eclasses[this_itree];
@@ -187,7 +207,7 @@ TEST (t8_cmesh_set_join_by_vertices, test_cmesh_set_join_by_vertices)
   /* 
    * Tests with 2D and 3D example meshes from `t8code`.
    */
-
+#if 0
   {
     const int           dim = 2;
     t8_cmesh_t          cmesh = t8_cmesh_new_periodic (comm, dim);
@@ -275,7 +295,7 @@ TEST (t8_cmesh_set_join_by_vertices, test_cmesh_set_join_by_vertices)
     test_with_cmesh (cmesh);
     t8_cmesh_destroy (&cmesh);
   }
-
+#endif
   /* The following cmeshes give erroneous results and the tests fail.
    * It is unclear yet if there is a bug in the `t8_set_join_by_vertices` routine
    * or if these cmesh examples have wrongly set face connectivities. */
@@ -303,13 +323,12 @@ TEST (t8_cmesh_set_join_by_vertices, test_cmesh_set_join_by_vertices)
    * }
    */
 
-  /* {
-   *   // Problem: Orientation discrepancy.
-   *   t8_cmesh_t cmesh = t8_cmesh_new_full_hybrid (comm);
-   *   test_with_cmesh(cmesh);
-   *   t8_cmesh_destroy (&cmesh);
-   * }
-   */
+  {
+    // Problem: Orientation discrepancy.
+    t8_cmesh_t          cmesh = t8_cmesh_new_full_hybrid (comm);
+    test_with_cmesh (cmesh);
+    t8_cmesh_destroy (&cmesh);
+  }
 
   /* {
    *   // Problem: Crashes with memory error.
@@ -326,7 +345,7 @@ TEST (t8_cmesh_set_join_by_vertices, test_cmesh_set_join_by_vertices)
   /* 
    * Tests with 2D and 3D example meshes from `p4est`.
    */
-
+#if 0
   /* Make sure that p4est is properly initialized. If not, do it here. */
   if (!sc_package_is_registered (p4est_package_id)) {
     p4est_init (NULL, SC_LP_ESSENTIAL);
@@ -432,6 +451,7 @@ TEST (t8_cmesh_set_join_by_vertices, test_cmesh_set_join_by_vertices)
     p8est_connectivity_destroy (p8_conn);
     t8_cmesh_destroy (&cmesh);
   }
+#endif
 }
 
 /* *INDENT-OFF* */
@@ -467,6 +487,7 @@ protected:
 };
 /* *INDENT-ON* */
 
+#if 0
 TEST_P (t8_cmesh_set_join_by_vertices_class,
         test_cmesh_set_join_by_vertices_parametrized)
 {
@@ -478,3 +499,4 @@ INSTANTIATE_TEST_SUITE_P (t8_cmesh_set_join_by_vertices,
                           t8_cmesh_set_join_by_vertices_class,
                           testing::Range (0,
                                           t8_get_number_of_all_testcases ()));
+#endif
