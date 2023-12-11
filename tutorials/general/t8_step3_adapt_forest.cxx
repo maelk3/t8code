@@ -24,14 +24,14 @@
  * After generating a coarse mesh (step1) and building a uniform forest
  * on it (step2), we will now adapt (= refine and coarsen) the forest
  * according to our own criterion.
- * 
+ *
  * The geometry (coarse mesh) is again a cube, this time modelled with
  * 6 tetrahedra, 6 prisms and 4 cubes.
  * We refine an element if its midpoint is within a sphere of given radius
  * around the point (0.5, 0.5, 1) and we coarsen outside of a given radius.
  * We will use non-recursive refinement, that means that the refinement level
  * of any element will change by at most +-1.
- * 
+ *
  * How you can experiment here:
  *   - Look at the paraview output files of the unifomr and the adapted forest.
  *     For the adapted forest you can apply a slice filter to look into the cube.
@@ -58,11 +58,12 @@
 #include <t8_schemes/t8_default/t8_default_cxx.hxx> /* default refinement scheme. */
 #include <t8_vec.h>                                 /* Basic operations on 3D vectors. */
 #include <tutorials/general/t8_step3.h>
+#include <t8_cmesh_readmshfile.h>
+#include <t8_cmesh/t8_cmesh_trees.h>
 
 T8_EXTERN_C_BEGIN ();
 
-/* This is our own defined data that we will pass on to the
- * adaptation callback. */
+double glob_mid, glob_r;
 
 /* The adaptation callback function. This function will be called once for each element
  * and the return value decides whether this element should be refined or not.
@@ -74,7 +75,7 @@ T8_EXTERN_C_BEGIN ();
  *   return > 0 -> The first element should get refined.
  *   return = 0 -> The first element should not get refined.
  *   return < 0 -> The whole family should get coarsened.
- *  
+ *
  * \param [in] forest       The current forest that is in construction.
  * \param [in] forest_from  The forest from which we adapt the current forest (in our case, the uniform forest)
  * \param [in] which_tree   The process local id of the current tree.
@@ -120,6 +121,39 @@ t8_step3_adapt_callback (t8_forest_t forest, t8_forest_t forest_from, t8_locidx_
   }
   /* Do not change this element. */
   return 0;
+}
+
+int
+t8_adapt_callback_testA (t8_forest_t forest, t8_forest_t forest_from, t8_locidx_t which_tree, t8_locidx_t lelement_id,
+                         t8_eclass_scheme_c *ts, const int is_family, const int num_elements, t8_element_t *elements[])
+{
+  /* Our adaptation criterion is to look at the midpoint coordinates of the current element and if
+   * they are inside a sphere around a given midpoint we refine, if they are outside, we coarsen. */
+  int level_min = 0;
+  int level_max = 3;
+
+  int level = ts->t8_element_level(elements[0]);
+  double centroid[3]; /* Will hold the element midpoint. */
+
+  /* Compute the element's centroid coordinates. */
+  t8_forest_element_centroid (forest_from, which_tree, elements[0], centroid);
+
+  double mid, r;
+  mid = glob_mid;
+  r   = glob_r;
+
+  int itag;
+  itag = 0;
+  if(centroid[0] <  mid+r && centroid[0] >  mid-r){
+    itag = 1;
+  } else
+  if(centroid[0] <  mid-r && is_family){
+    itag = -1;
+  }
+  if(level >= level_max && itag == 1) itag = 0;
+  if(level <= level_min && itag == -1) itag = 0;
+
+  return itag;
 }
 
 /* Adapt a forest according to our t8_step3_adapt_callback function.

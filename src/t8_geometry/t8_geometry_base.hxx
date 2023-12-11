@@ -115,6 +115,12 @@ struct t8_geometry
     return name;
   }
 
+  virtual const double *
+  t8_geom_get_active_tree_vertices ()
+  {
+    return NULL;
+  };
+
   /**
    * Get the type of this geometry.
    * \return The type.

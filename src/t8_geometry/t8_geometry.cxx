@@ -263,7 +263,7 @@ t8_geom_handler_get_unique_geometry (const t8_geometry_handler_t *geom_handler)
   return *(const t8_geometry_c **) sc_array_index_int (geometries, 0);
 }
 
-static inline void
+void
 t8_geom_handler_update_tree (t8_geometry_handler_t *geom_handler, t8_cmesh_t cmesh, t8_gloidx_t gtreeid)
 {
   /* Must be committed */

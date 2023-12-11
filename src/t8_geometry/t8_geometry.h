@@ -129,6 +129,9 @@ t8_geom_handler_commit (t8_geometry_handler_t *geom_handler);
 int
 t8_geom_handler_is_committed (const t8_geometry_handler_t *geom_handler);
 
+void
+t8_geom_handler_update_tree (t8_geometry_handler_t *geom_handler, t8_cmesh_t cmesh, t8_gloidx_t gtreeid);
+
 /** Return the number of registered geometries.
  * \param [in] geom_handler A geometry handler (must be initialized and may or may not be committed).
  * \return  The number of registered geometries in \a geom_handler.
