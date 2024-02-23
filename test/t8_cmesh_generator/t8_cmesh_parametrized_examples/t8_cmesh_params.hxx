@@ -61,7 +61,7 @@ std::vector<const double *> boundaries = { cube_bounds };
 
 std::vector<int> use_axis_aligned = { 0, 1 };
 
-std::vector<int> large_mesh = filled_vector (20, 500);
+std::vector<int> large_mesh = filled_vector (20, 100);
 
 std::vector<int> elems_per_dim = filled_vector (5, 1);
 
