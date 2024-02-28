@@ -62,9 +62,11 @@ std::vector<const double *> boundaries = { cube_bounds };
 std::vector<int> use_axis_aligned = { 0, 1 };
 
 std::vector<int> large_mesh = filled_vector (20, 100);
-
+#ifdef T8_ENABLE_LESS_TESTS
+std::vector<int> elems_per_dim = filled_vector (3, 1);
+#else
 std::vector<int> elems_per_dim = filled_vector (5, 1);
-
+#endif
 std::vector<sc_MPI_Comm> my_comms = { sc_MPI_COMM_WORLD };
 std::vector<t8_eclass_t> eclasses = { T8_ECLASS_VERTEX, T8_ECLASS_LINE, T8_ECLASS_QUAD,  T8_ECLASS_TRIANGLE,
                                       T8_ECLASS_HEX,    T8_ECLASS_TET,  T8_ECLASS_PRISM, T8_ECLASS_PYRAMID };

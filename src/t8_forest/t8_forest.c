@@ -60,6 +60,8 @@ t8_forest_init (t8_forest_t *pforest)
   forest->maxlevel_existing = -1;
   forest->stats_computed = 0;
   forest->incomplete_trees = -1;
+  forest->adapt_marker = NULL;
+  forest->set_adapt_batched = 0;
 }
 
 int
@@ -270,6 +272,33 @@ t8_forest_set_adapt (t8_forest_t forest, const t8_forest_t set_from, t8_forest_a
   /* Add ADAPT to the from_method.
    * This overwrites T8_FOREST_FROM_COPY */
 
+  if (forest->from_method == T8_FOREST_FROM_LAST) {
+    forest->from_method = T8_FOREST_FROM_ADAPT;
+  }
+  else {
+    forest->from_method |= T8_FOREST_FROM_ADAPT;
+  }
+}
+void
+t8_forest_set_adapt_batch (t8_forest_t forest, const t8_forest_t set_from, int *marker)
+{
+  T8_ASSERT (forest != NULL);
+  T8_ASSERT (forest->rc.refcount > 0);
+  T8_ASSERT (!forest->committed);
+  T8_ASSERT (forest->mpicomm == sc_MPI_COMM_NULL);
+  T8_ASSERT (forest->cmesh == NULL);
+  T8_ASSERT (forest->scheme_cxx == NULL);
+  T8_ASSERT (forest->set_adapt_recursive == -1);
+  T8_ASSERT (forest->set_adapt_fn == NULL);
+
+  forest->set_adapt_batched = 1;
+  forest->adapt_marker = marker;
+
+  forest->set_adapt_recursive = 0;
+
+  if (set_from != NULL) {
+    forest->set_from = set_from;
+  }
   if (forest->from_method == T8_FOREST_FROM_LAST) {
     forest->from_method = T8_FOREST_FROM_ADAPT;
   }
@@ -510,7 +539,6 @@ t8_forest_commit (t8_forest_t forest)
 
     /* T8_ASSERT (forest->from_method == T8_FOREST_FROM_COPY); */
     if (forest->from_method & T8_FOREST_FROM_ADAPT) {
-      SC_CHECK_ABORT (forest->set_adapt_fn != NULL, "No adapt function specified");
       forest->from_method -= T8_FOREST_FROM_ADAPT;
       if (forest->from_method > 0) {
         /* The forest should also be partitioned/balanced.
@@ -523,7 +551,14 @@ t8_forest_commit (t8_forest_t forest)
         /* set user data of forest to forest_adapt */
         t8_forest_set_user_data (forest_adapt, t8_forest_get_user_data (forest));
         /* Construct an intermediate, adapted forest */
-        t8_forest_set_adapt (forest_adapt, forest->set_from, forest->set_adapt_fn, forest->set_adapt_recursive);
+        if (forest->set_adapt_batched) {
+          SC_CHECK_ABORT (forest->adapt_marker != NULL, "No adapt marker specified");
+          t8_forest_set_adapt_batch (forest_adapt, forest->set_from, forest->adapt_marker);
+        }
+        else {
+          SC_CHECK_ABORT (forest->set_adapt_fn != NULL, "No adapt function specified");
+          t8_forest_set_adapt (forest_adapt, forest->set_from, forest->set_adapt_fn, forest->set_adapt_recursive);
+        }
         /* Set profiling if enabled */
         t8_forest_set_profiling (forest_adapt, forest->profile != NULL);
         t8_forest_commit (forest_adapt);
@@ -539,7 +574,12 @@ t8_forest_commit (t8_forest_t forest)
       else {
         /* This forest should only be adapted */
         t8_forest_copy_trees (forest, forest->set_from, 0);
-        t8_forest_adapt (forest);
+        if (forest->set_adapt_batched == 1) {
+          t8_forest_adapt_batched (forest, forest->adapt_marker);
+        }
+        else {
+          t8_forest_adapt (forest);
+        }
       }
     }
     if (forest->from_method & T8_FOREST_FROM_PARTITION) {

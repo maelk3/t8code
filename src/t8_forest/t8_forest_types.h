@@ -93,20 +93,22 @@ typedef struct t8_forest
                                              is set to T8_FOREST_FROM_ADAPT. */
   int set_adapt_recursive;        /**< Flag to decide whether coarsen and refine
                                                 are carried out recursive */
-  int set_balance;                /**< Flag to decide whether to forest will be balance in \ref t8_forest_commit.
+  int set_adapt_batched;
+  int *adapt_marker;
+  int set_balance;            /**< Flag to decide whether to forest will be balance in \ref t8_forest_commit.
                                              See \ref t8_forest_set_balance.
                                              If 0, no balance. If 1 balance with repartitioning, if 2 balance without
                                              repartitioning, \see t8_forest_balance */
-  int do_ghost;                   /**< If True, a ghost layer will be created when the forest is committed. */
-  t8_ghost_type_t ghost_type;     /**< If a ghost layer will be created, the type of neighbors that count as ghost. */
-  int ghost_algorithm;            /**< Controls the algorithm used for ghost. 1 = balanced only. 2 = also unbalanced
+  int do_ghost;               /**< If True, a ghost layer will be created when the forest is committed. */
+  t8_ghost_type_t ghost_type; /**< If a ghost layer will be created, the type of neighbors that count as ghost. */
+  int ghost_algorithm;        /**< Controls the algorithm used for ghost. 1 = balanced only. 2 = also unbalanced
                                              3 = top-down search and unbalanced. */
-  void *user_data;                /**< Pointer for arbitrary user data. \see t8_forest_set_user_data. */
-  void (*user_function) ();       /**< Pointer for arbitrary user function. \see t8_forest_set_user_function. */
-  void *t8code_data;              /**< Pointer for arbitrary data that is used internally. */
-  int committed;                  /**< \ref t8_forest_commit called? */
-  int mpisize;                    /**< Number of MPI processes. */
-  int mpirank;                    /**< Number of this MPI process. */
+  void *user_data;            /**< Pointer for arbitrary user data. \see t8_forest_set_user_data. */
+  void (*user_function) ();   /**< Pointer for arbitrary user function. \see t8_forest_set_user_function. */
+  void *t8code_data;          /**< Pointer for arbitrary data that is used internally. */
+  int committed;              /**< \ref t8_forest_commit called? */
+  int mpisize;                /**< Number of MPI processes. */
+  int mpirank;                /**< Number of this MPI process. */
 
   t8_gloidx_t first_local_tree; /**< The global index of the first local tree on this process. 
                                              If first_local_tree is larger than last_local_tree then 

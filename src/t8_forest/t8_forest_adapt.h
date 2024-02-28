@@ -37,6 +37,9 @@ T8_EXTERN_C_BEGIN ();
 void
 t8_forest_adapt (t8_forest_t forest);
 
+void
+t8_forest_adapt_batched (t8_forest_t forest, int* adapt_marker);
+
 T8_EXTERN_C_END ();
 
 #endif /* !T8_FOREST_ADAPT_H! */

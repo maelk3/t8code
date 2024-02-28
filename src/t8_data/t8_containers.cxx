@@ -219,7 +219,7 @@ t8_element_array_push_count (t8_element_array_t *element_array, size_t count)
 }
 
 t8_element_t *
-t8_element_array_index_locidx (t8_element_array_t *element_array, t8_locidx_t index)
+t8_element_array_index_locidx (const t8_element_array_t *element_array, t8_locidx_t index)
 {
   T8_ASSERT (t8_element_array_is_valid (element_array));
   return (t8_element_t *) t8_sc_array_index_locidx (&element_array->array, index);

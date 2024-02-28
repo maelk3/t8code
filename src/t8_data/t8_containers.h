@@ -164,7 +164,7 @@ t8_element_array_push_count (t8_element_array_t *element_array, size_t count);
  *                    \a element_array.
  */
 t8_element_t *
-t8_element_array_index_locidx (t8_element_array_t *element_array, t8_locidx_t index);
+t8_element_array_index_locidx (const t8_element_array_t *element_array, t8_locidx_t index);
 
 /** Return a given element in an array.
  * \param [in]  element_array Array of elements.
