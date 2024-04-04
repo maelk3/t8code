@@ -41,6 +41,7 @@ main (int argc, char **argv)
   p4est_init (NULL, SC_LP_ESSENTIAL);
   t8_init (SC_LP_ESSENTIAL);
 
+  /* usage options */
   int initial_level;
   int use_old_version_new;
   int mesh;
@@ -51,6 +52,20 @@ main (int argc, char **argv)
   sc_options_add_int (opt, `m`, "mesh", &mesh, "Pick the mesh to use");
 
   int first_argc = sc_options_parse (t8_get_package_id (), SC_LP_DEFAULT, opt, argc, argv);
+
+  if (first_argc < 0 || first_argc != argc || help_me || initial_level < 0) {
+    sc_options_print_usage (t8_get_package_id (), SC_LP_ERROR, opt, NULL);
+    sc_options_destroy (opt);
+    sc_finalize ();
+    mpiret = sc_MPI_Finalize ();
+    SC_CHECK_MPI (mpiret);
+    return 1;
+  }
+
+  sc_options_destroy (opt);
+  sc_finalize ();
+  mpiret = sc_MPI_Finalize ();
+  SC_CHECK_MPI (mpiret);
 
   return 0;
 }
