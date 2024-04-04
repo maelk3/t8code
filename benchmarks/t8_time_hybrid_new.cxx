@@ -25,9 +25,40 @@ along with t8code; if not, write to the Free Software Foundation, Inc.,
  */
 
 #include <t8_forest/t8_forest_general.h>
+#include <t8_cmesh/t8_cmesh_examples.h>
+#include <t8_schemes/t8_default/t8_default_cxx.hxx>
 #include <sc_flops.h>
 #include <sc_statistics.h>
 #include <sc_options.h>
+
+void
+benchmark_new (const int init_level, const bool use_old_new, const int mesh)
+{
+
+  t8_eclass_t eclass = T8_ECLASS_QUAD;
+  sc_flopinfo_t fi, snapshot;
+  sc_statistics_t *stats = sc_statistics_new (sc_MPI_COMM_WORLD);
+  sc_statistics_add (stats, "New");
+  const int num_runs = 2;
+  sc_flops_start (&fi);
+  for (int irun = 0; irun < num_runs; irun++) {
+    t8_forest_t forest;
+    t8_forest_init (&forest);
+    t8_forest_set_cmesh (forest, t8_cmesh_new_bigmesh (eclass, 512, sc_MPI_COMM_WORLD), sc_MPI_COMM_WORLD);
+    t8_forest_set_scheme (forest, t8_scheme_new_default_cxx ());
+    t8_forest_set_level (forest, init_level);
+    SC_FUNC_SNAP (stats, &fi, &snapshot);
+
+    t8_forest_commit (forest);
+    SC_FUNC_SHOT (stats, &fi, &snapshot);
+    t8_forest_unref (&forest);
+  }
+
+  sc_statistics_compute (stats);
+  sc_statistics_print (stats, t8_get_package_id (), SC_LP_STATISTICS, 1, 1);
+
+  sc_statistics_destroy (stats);
+}
 
 int
 main (int argc, char **argv)
@@ -39,17 +70,19 @@ main (int argc, char **argv)
   /* init sc, p4est & t8code */
   sc_init (sc_MPI_COMM_WORLD, 1, 1, NULL, SC_LP_ESSENTIAL);
   p4est_init (NULL, SC_LP_ESSENTIAL);
-  t8_init (SC_LP_ESSENTIAL);
+  t8_init (SC_LP_STATISTICS);
 
   /* usage options */
   int initial_level;
   int use_old_version_new;
   int mesh;
+  int help_me;
   sc_options_t *opt = sc_options_new (argv[0]);
-  sc_options_add_int (opt, `i`, "initial_level", &initial_level, 0, "initial level for a uniform mesh");
+  sc_options_add_switch (opt, 'h', "help", &help_me, "Print a help message");
+  sc_options_add_int (opt, 'i', "initial_level", &initial_level, 0, "initial level for a uniform mesh");
   sc_options_add_switch (opt, 'o', "old_version_new", &use_old_version_new,
                          "Use the new version that is not optimized for hybrid meshes");
-  sc_options_add_int (opt, `m`, "mesh", &mesh, "Pick the mesh to use");
+  sc_options_add_int (opt, 'm', "mesh", &mesh, 0, "Pick the mesh to use");
 
   int first_argc = sc_options_parse (t8_get_package_id (), SC_LP_DEFAULT, opt, argc, argv);
 
@@ -60,6 +93,9 @@ main (int argc, char **argv)
     mpiret = sc_MPI_Finalize ();
     SC_CHECK_MPI (mpiret);
     return 1;
+  }
+  else {
+    benchmark_new (initial_level, use_old_version_new, mesh);
   }
 
   sc_options_destroy (opt);
