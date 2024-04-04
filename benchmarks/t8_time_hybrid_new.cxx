@@ -24,9 +24,33 @@ along with t8code; if not, write to the Free Software Foundation, Inc.,
  * \file    Benchmark program to compare the hybrid new with the uniform new. 
  */
 
+#include <t8_forest/t8_forest_general.h>
+#include <sc_flops.h>
+#include <sc_statistics.h>
+#include <sc_options.h>
+
 int
 main (int argc, char **argv)
 {
+  /* init MPI */
+  int mpiret = sc_MPI_Init (&argc, &argv);
+  SC_CHECK_MPI (mpiret);
+
+  /* init sc, p4est & t8code */
+  sc_init (sc_MPI_COMM_WORLD, 1, 1, NULL, SC_LP_ESSENTIAL);
+  p4est_init (NULL, SC_LP_ESSENTIAL);
+  t8_init (SC_LP_ESSENTIAL);
+
+  int initial_level;
+  int use_old_version_new;
+  int mesh;
+  sc_options_t *opt = sc_options_new (argv[0]);
+  sc_options_add_int (opt, `i`, "initial_level", &initial_level, 0, "initial level for a uniform mesh");
+  sc_options_add_switch (opt, 'o', "old_version_new", &use_old_version_new,
+                         "Use the new version that is not optimized for hybrid meshes");
+  sc_options_add_int (opt, `m`, "mesh", &mesh, "Pick the mesh to use");
+
+  int first_argc = sc_options_parse (t8_get_package_id (), SC_LP_DEFAULT, opt, argc, argv);
 
   return 0;
 }
