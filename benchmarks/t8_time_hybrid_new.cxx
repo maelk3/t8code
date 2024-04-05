@@ -20,6 +20,9 @@ along with t8code; if not, write to the Free Software Foundation, Inc.,
 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
 */
 
+
+// Where is the comparison? As i see it you benchmark the New algorithm and the comparison comes when executing it with different versions of t8code?
+// Please specify so in the comment, otherwise its misleading.
 /**
  * \file    Benchmark program to compare the hybrid new with the uniform new. 
  */
@@ -35,8 +38,9 @@ along with t8code; if not, write to the Free Software Foundation, Inc.,
 void
 benchmark_new (const int init_level, const char *file, const int master, const int dim)
 {
-
+  // can be const and moved down to the bigmesh bracket
   t8_eclass_t eclass = T8_ECLASS_PYRAMID;
+  
   sc_flopinfo_t fi, snapshot;
   sc_statistics_t *stats = sc_statistics_new (sc_MPI_COMM_WORLD);
 
@@ -44,7 +48,8 @@ benchmark_new (const int init_level, const char *file, const int master, const i
    * only on the master rank and is directly partitioned. */
   t8_cmesh_t cmesh;
   if (strcmp (file, "")) {
-    const int partitioned_read = master >= 0;
+    const int partitioned_read = (master >= 0); // added ( ) for readability
+    // "gmsh" instead of "gmesh" ?
     t8_cmesh_t gmesh_cmesh = t8_cmesh_from_msh_file (file, partitioned_read, sc_MPI_COMM_WORLD, dim, master, false);
     t8_cmesh_init (&cmesh);
     t8_cmesh_set_derive (cmesh, gmesh_cmesh);
@@ -56,7 +61,7 @@ benchmark_new (const int init_level, const char *file, const int master, const i
     cmesh = t8_cmesh_new_bigmesh (eclass, 512, sc_MPI_COMM_WORLD);
   }
 
-  const int num_runs = 8;
+  const int num_runs = 8; // this is a magic number, should be explained in a comment. Or maybe a command line parameter?
   sc_flops_start (&fi);
   for (int irun = 0; irun < num_runs; irun++) {
     t8_forest_t forest;
@@ -98,14 +103,18 @@ main (int argc, char **argv)
   int help_me;
   int dim;
   int master;
+  
   sc_options_t *opt = sc_options_new (argv[0]);
   sc_options_add_switch (opt, 'h', "help", &help_me, "Print a help message");
   sc_options_add_int (opt, 'i', "initial_level", &initial_level, 0, "initial level for a uniform mesh");
   sc_options_add_string (opt, 'f', "file", &file, "", "Read cmesh from a msh file");
-  sc_options_add_int (opt, 'd', "dim", &dim, 0, "dimension of the mesh");
+  sc_options_add_int (opt, 'd', "dim", &dim, 0, "dimension of the mesh"); // only needed when -f is used? Specify in help string.
   sc_options_add_int (opt, 'm', "master", &master, -1,
                       "If specified, the mesh is partitioned and all elements reside on process with rank master.");
+// The output of the cmesh creation ins always a uniformly partitioned cmesh. So what difference does the -m option make?
 
+  
+  // const int
   int first_argc = sc_options_parse (t8_get_package_id (), SC_LP_DEFAULT, opt, argc, argv);
 
   if (first_argc < 0 || first_argc != argc || help_me || initial_level < 0) {
