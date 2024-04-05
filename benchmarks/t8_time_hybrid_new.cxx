@@ -38,8 +38,7 @@ benchmark_new (const int init_level, const bool use_old_new, const int mesh)
   t8_eclass_t eclass = T8_ECLASS_QUAD;
   sc_flopinfo_t fi, snapshot;
   sc_statistics_t *stats = sc_statistics_new (sc_MPI_COMM_WORLD);
-  sc_statistics_add (stats, "New");
-  const int num_runs = 2;
+  const int num_runs = 3;
   sc_flops_start (&fi);
   for (int irun = 0; irun < num_runs; irun++) {
     t8_forest_t forest;
@@ -56,7 +55,6 @@ benchmark_new (const int init_level, const bool use_old_new, const int mesh)
 
   sc_statistics_compute (stats);
   sc_statistics_print (stats, t8_get_package_id (), SC_LP_STATISTICS, 1, 1);
-
   sc_statistics_destroy (stats);
 }
 
