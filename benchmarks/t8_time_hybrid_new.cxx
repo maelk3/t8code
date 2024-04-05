@@ -56,7 +56,7 @@ benchmark_new (const int init_level, const char *file, const int master, const i
     cmesh = t8_cmesh_new_bigmesh (eclass, 512, sc_MPI_COMM_WORLD);
   }
 
-  const int num_runs = 2;
+  const int num_runs = 8;
   sc_flops_start (&fi);
   for (int irun = 0; irun < num_runs; irun++) {
     t8_forest_t forest;
