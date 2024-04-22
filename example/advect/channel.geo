@@ -18,7 +18,7 @@ Plane Surface(2) = {2};
 Curve Loop(3) = {3, 4};
 Plane Surface(3) = {3};
 Rectangle(4) = {-3, -2, -1.5, 6, 4, 0};
-BooleanDifference{ Surface{4}; Delete; }{ Surface{3};}
+BooleanDifference{ Surface{4}; Delete; }{ Surface{3}; Delete;}
 Extrude {0, 0, 3} {
   Surface{1};
   Surface{2};
