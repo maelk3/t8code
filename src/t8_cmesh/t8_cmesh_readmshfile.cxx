@@ -1016,8 +1016,9 @@ t8_cmesh_msh_file_4_read_eles (t8_cmesh_t cmesh, FILE *fp, sc_hash_t *vertices, 
           T8_ASSERT (cad_geometry_base->t8_geom_get_type () == T8_GEOMETRY_TYPE_CAD);
           const t8_geometry_cad_c *cad_geometry = dynamic_cast<const t8_geometry_cad_c *> (cad_geometry_base);
           /* Check for right element class */
-          if (eclass != T8_ECLASS_TRIANGLE && eclass != T8_ECLASS_QUAD && eclass != T8_ECLASS_TET
-              && eclass != T8_ECLASS_HEX) {
+          if (0) /*eclass != T8_ECLASS_TRIANGLE && eclass != T8_ECLASS_QUAD && eclass != T8_ECLASS_TET
+              && eclass != T8_ECLASS_HEX)*/
+          {
             t8_errorf ("%s element detected. The occ geometry currently only supports quad, tri, tet and hex elements.",
                        t8_eclass_to_string[eclass]);
             goto die_ele;
@@ -1178,6 +1179,8 @@ t8_cmesh_msh_file_4_read_eles (t8_cmesh_t cmesh, FILE *fp, sc_hash_t *vertices, 
                 continue;
               }
               /* If we have found a surface we link it to the face */
+              if (surface_index == 1 || surface_index == 8)
+                continue;
               face_geometries[i_tree_faces] = surface_index;
               tree_is_linked = 1;
               for (int i_face_edges = 0; i_face_edges < num_face_edges; ++i_face_edges) {
@@ -1358,7 +1361,9 @@ t8_cmesh_msh_file_4_read_eles (t8_cmesh_t cmesh, FILE *fp, sc_hash_t *vertices, 
               if (cad_geometry->t8_geom_is_line (edge_geometry_tag)) {
                 continue;
               }
-
+              if (edge_geometry_tag == 4 || edge_geometry_tag == 16 || edge_geometry_tag == 3
+                  || edge_geometry_tag == 15)
+                continue;
               edge_geometries[i_tree_edges] = edge_geometry_tag;
               tree_is_linked = 1;
               parameters[0] = edge_nodes[0].parameters[0];
@@ -1424,6 +1429,9 @@ t8_cmesh_msh_file_4_read_eles (t8_cmesh_t cmesh, FILE *fp, sc_hash_t *vertices, 
                 continue;
               }
 
+              if (edge_geometry_tag == 4 || edge_geometry_tag == 16 || edge_geometry_tag == 3
+                  || edge_geometry_tag == 15)
+                continue;
               edge_geometries[i_tree_edges + t8_eclass_num_edges[eclass]] = edge_geometry_tag;
               tree_is_linked = 1;
               parameters[0] = edge_nodes[0].parameters[0];
@@ -1459,6 +1467,13 @@ t8_cmesh_msh_file_4_read_eles (t8_cmesh_t cmesh, FILE *fp, sc_hash_t *vertices, 
             t8_cmesh_set_tree_geometry (cmesh, tree_count, cad_geometry_base);
             t8_debugf ("Registering tree %li with geometry %s \n", tree_count,
                        cad_geometry_base->t8_geom_get_name ().c_str ());
+            if (eclass == T8_ECLASS_PYRAMID) {
+              printf ("LINKED PYRAMID FACES: %i %i %i %i %i\n", face_geometries[0], face_geometries[1],
+                      face_geometries[2], face_geometries[3], face_geometries[4]);
+              printf ("LINKED PYRAMID EDGES: %i %i %i %i %i %i %i %i\n", edge_geometries[0], edge_geometries[1],
+                      edge_geometries[2], edge_geometries[3], edge_geometries[4], edge_geometries[5],
+                      edge_geometries[6], edge_geometries[7]);
+            }
           }
           else {
             t8_cmesh_set_tree_geometry (cmesh, tree_count, linear_geometry_base);
