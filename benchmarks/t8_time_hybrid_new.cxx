@@ -58,7 +58,7 @@ benchmark_new (const int init_level, const char *file, const int dim, const int 
     t8_cmesh_t gmsh_cmesh = t8_cmesh_from_msh_file (file, true, sc_MPI_COMM_WORLD, dim, 0, false);
     t8_cmesh_init (&cmesh);
     t8_cmesh_set_derive (cmesh, gmsh_cmesh);
-    t8_cmesh_set_partition_uniform (cmesh, 0, t8_scheme_new_default_cxx ());
+    t8_cmesh_set_partition_uniform (cmesh, init_level, t8_scheme_new_default_cxx ());
     t8_cmesh_commit (cmesh, sc_MPI_COMM_WORLD);
   }
   else {
@@ -78,6 +78,8 @@ benchmark_new (const int init_level, const char *file, const int dim, const int 
 
     t8_forest_commit (forest);
     SC_FUNC_SHOT (stats, &fi, &snapshot);
+    const t8_gloidx_t global_num_elem = t8_forest_get_global_num_elements (forest);
+    t8_productionf ("Global number of elements: %li\n", global_num_elem);
     t8_forest_unref (&forest);
   }
   t8_cmesh_unref (&cmesh);
