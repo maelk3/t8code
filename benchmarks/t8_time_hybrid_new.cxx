@@ -78,8 +78,8 @@ benchmark_new (const int init_level, const char *file, const int dim, const int 
 
     t8_forest_commit (forest);
     SC_FUNC_SHOT (stats, &fi, &snapshot);
-    const t8_gloidx_t global_num_elem = t8_forest_get_global_num_elements (forest);
-    t8_productionf ("Global number of elements: %li\n", global_num_elem);
+    const size_t global_num_elem = t8_forest_get_global_num_elements (forest);
+    t8_global_essentialf ("Global number of elements: %li\n", global_num_elem);
     t8_forest_unref (&forest);
   }
   t8_cmesh_unref (&cmesh);
