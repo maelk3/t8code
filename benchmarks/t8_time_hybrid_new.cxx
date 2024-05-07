@@ -62,8 +62,8 @@ benchmark_new (const int init_level, const char *file, const int dim, const int 
     t8_cmesh_commit (cmesh, sc_MPI_COMM_WORLD);
   }
   else {
-    t8_productionf ("No mesh-file provided, use pyramid bigmesh instead\n");
-    cmesh = t8_cmesh_new_bigmesh (eclass, 512, sc_MPI_COMM_WORLD);
+    t8_productionf ("No mesh-file provided, use hybrid gate instead\n");
+    cmesh = t8_cmesh_new_hybrid_gate (sc_MPI_COMM_WORLD);
   }
 
   sc_flops_start (&fi);
