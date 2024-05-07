@@ -425,6 +425,8 @@ t8_cmesh_bounds_send_start (t8_cmesh_t cmesh, const int proc_is_empty, const t8_
     *expect_start_message = 0;
 #ifdef T8_ENABLE_DEBUG
     (*num_received_start_messages)++;
+    t8_debugf ("[D] send start to self: start: %i\n", *num_received_start_messages);
+
 #endif
   }
 }
@@ -745,6 +747,8 @@ t8_cmesh_uniform_bounds_from_partition (t8_cmesh_t cmesh, t8_gloidx_t local_num_
           expect_end_message = 0;
 #ifdef T8_ENABLE_DEBUG
           num_received_end_messages++;
+          t8_debugf ("[D] send end to self: start: %i, end: %i\n", num_received_start_messages,
+                     num_received_end_messages);
 #endif
         }
       } /* End sending of end message */
@@ -764,17 +768,15 @@ t8_cmesh_uniform_bounds_from_partition (t8_cmesh_t cmesh, t8_gloidx_t local_num_
     expect_end_message = 0;
     *first_local_tree = 0;
     *last_local_tree = -1;
-    *first_tree_shared = 0;
+    if (first_tree_shared != NULL) {
+      *first_tree_shared = 0;
+    }
     if (child_in_tree_begin != NULL) {
       *child_in_tree_begin = -1;
     }
     if (child_in_tree_end != NULL) {
       *child_in_tree_end = -1;
     }
-#ifdef T8_ENABLE_DEBUG
-    num_received_end_messages++;
-    num_received_start_messages++;
-#endif
   }
 
   /* Post the receives. */
@@ -788,6 +790,9 @@ t8_cmesh_uniform_bounds_from_partition (t8_cmesh_t cmesh, t8_gloidx_t local_num_
 
 #ifdef T8_ENABLE_DEBUG
     num_received_start_messages++;
+    t8_debugf ("[D] receive start message: start: %i, end: %i\n", num_received_start_messages,
+               num_received_end_messages);
+
 #endif
     /* Copy the received data to output parameters */
     *first_local_tree = message[0];
@@ -809,7 +814,9 @@ t8_cmesh_uniform_bounds_from_partition (t8_cmesh_t cmesh, t8_gloidx_t local_num_
       T8_ASSERT (*child_in_tree_begin == -1
                  || (0 <= *child_in_tree_begin && *child_in_tree_begin < data.global_num_elements));
     }
+    t8_debugf ("Receiving start message (%li, %li) global num %li\n", message[0], message[1], data.global_num_elements);
     T8_FREE (message);
+    T8_ASSERT (num_received_start_messages == 1);
   } /* End receiving start message */
   if (expect_end_message) {
     const int num_entries = 2;
@@ -819,6 +826,7 @@ t8_cmesh_uniform_bounds_from_partition (t8_cmesh_t cmesh, t8_gloidx_t local_num_
     SC_CHECK_MPI (mpiret);
 #ifdef T8_ENABLE_DEBUG
     num_received_end_messages++;
+    t8_debugf ("[D] expect end message: start: %i, end: %i\n", num_received_start_messages, num_received_end_messages);
 #endif
     t8_debugf ("Receiving end message (%li, %li) global num %li\n", message[0], message[1], data.global_num_elements);
 
@@ -831,6 +839,7 @@ t8_cmesh_uniform_bounds_from_partition (t8_cmesh_t cmesh, t8_gloidx_t local_num_
                  || (0 <= *child_in_tree_end && *child_in_tree_end <= data.global_num_elements));
     }
     T8_FREE (message);
+    T8_ASSERT (num_received_end_messages == 1);
   } /* End receiving end message */
   if (child_in_tree_begin != NULL && child_in_tree_end != NULL) {
     /* Check for empty partition */
@@ -846,8 +855,6 @@ t8_cmesh_uniform_bounds_from_partition (t8_cmesh_t cmesh, t8_gloidx_t local_num_
   t8_gloidx_t num_messages_sent = 0;
   const int mpiret = sc_MPI_Waitall (num_messages_sent, (sc_MPI_Request *) send_requests.array, sc_MPI_STATUSES_IGNORE);
   SC_CHECK_MPI (mpiret);
-  T8_ASSERT (num_received_start_messages == 1);
-  T8_ASSERT (num_received_end_messages == 1);
 
   if (pure_local_trees > 0) {
     sc_array_reset (&send_requests);

@@ -99,7 +99,7 @@ main (int argc, char **argv)
   /* init sc, p4est & t8code */
   sc_init (sc_MPI_COMM_WORLD, 1, 1, NULL, SC_LP_ESSENTIAL);
   p4est_init (NULL, SC_LP_ESSENTIAL);
-  t8_init (SC_LP_STATISTICS);
+  t8_init (SC_LP_DEBUG);
 
   /* usage options */
   int initial_level;
